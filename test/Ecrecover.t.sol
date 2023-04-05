@@ -9,14 +9,16 @@ contract Verifier {
         assembly {
             let fmp := mload(0x40)
             // mock write "v" to memory
-            mstore(fmp, 12345)
+            mstore(fmp, 1)
             calldatacopy(add(fmp, 0x60), what.offset, what.length)
             // we want it to return data at the free memory pointer with a length of 32 (0x20)
             // ret data will be written at "v" location
             let ret := call(gas(), who, 0, add(fmp, 0x60), what.length, fmp, 32)
 
+            // store ret and size to return them
             mstore(add(fmp, 0x20), ret)
             mstore(add(fmp, 0x40), returndatasize())
+
             return(add(fmp, 0x20), 0x40)
         }
     }
@@ -35,8 +37,8 @@ contract EcTest is Test {
         // call the verifier contract, make it call the precompile in turn
         (bool ret, uint256 size) = ver.call(address(rec), abi.encodeWithSelector(rec.recover.selector));
 
+        assertTrue(ret);
         // should be 0, as recover returned ∅
         assertEq(size, 0);
-        assertFalse(ret);
     }
 }
